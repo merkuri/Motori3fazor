@@ -2,10 +2,9 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>3/6-Phase Motor Simulation – Star/Delta, Combined Views & Fan Sound</title>
-  <!-- Load p5.js and p5.sound from a CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.sound.min.js"></script>
+  <title>3/6-Phase Motor Simulation – Star/Delta and Combined Views</title>
+  <!-- Load p5.js from a CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@latest/lib/p5.min.js"></script>
   <style>
     /* Center the canvas and style the layout */
     body {
@@ -30,20 +29,21 @@ let stepTime;                  // Time increment for a single “step”.
 
 // -------------------- Trail Data for Combined R --------------------
 let combinedTrail = [];        // Array storing successive positions of the combined resultant R.
-let currentTrailColor;         // Current color for the trail.
+let currentTrailColor;         // The color used to draw the current trail.
 let trailEnabled = true;       // Whether to draw the trail.
 
 // -------------------- Phase Configuration --------------------
 /*  
-   In 3‑phase mode, we have phases A, B, C at 0°, 120°, 240°.
-   In 6‑phase mode, we have two balanced sets:
+   In 3‑phase mode, we have phases A, B, C at 0°, 120°, and 240°.
+   In 6‑phase mode we have two balanced sets:
      • Star (uppercase): A, B, C at 0°, 120°, 240°.
      • Delta (lowercase): defined by adding 120° to the star phases:
          a = sin(t + 0 + 120°),
          b = sin(t + 2π/3 + 120°),
          c = sin(t + 4π/3 + 120°).
-   In an ideal system the delta set is a permutation of the star set so that when paired (via a fixed mapping)
-   the combined vectors (labeled “Ac”, “Ba”, “Cb”) add to 2·sin(t+θ) in each direction (i.e. a constant–magnitude R).
+   In an ideal system the delta set is a permutation of the star set so that when paired
+   (via a fixed mapping) the combined vectors (labeled “Ac”, “Ba”, “Cb”) add to 2*sin(t+θ)
+   in each direction (i.e. a constant–magnitude R).
 */
 let numPhases = 3;             // 3 for 3‑phase mode; 6 for 6‑phase mode.
 let phaseLabels;               // For 3‑phase: ["A","B","C"]; for 6‑phase: ["A","a","B","b","C","c"].
@@ -54,13 +54,6 @@ let freezeButton, fasterButton, slowerButton;
 let randomCutOneButton, randomCutTwoButton, resetCutoffsButton;
 let swapRotationButton, stepButton, togglePhasesButton;
 let toggleTrailButton;         // Button to toggle the trail
-let toggleSoundButton;         // Button to toggle sound on/off
-
-// -------------------- Sound – Fan Effect --------------------
-let fanNoise;                  // Pink noise generator.
-let fanFilter;                 // Band–pass filter.
-let soundOn = false;           // Whether sound is enabled.
-const baseFreq = 200;          // Base filter frequency.
 
 // -------------------- Setup --------------------
 function setup() {
@@ -120,17 +113,6 @@ function setup() {
   toggleTrailButton = createButton('Toggle Trail');
   toggleTrailButton.position(430, height + 70);
   toggleTrailButton.mousePressed(toggleTrail);
-  
-  toggleSoundButton = createButton('Toggle Sound');
-  toggleSoundButton.position(430, height + 40);
-  toggleSoundButton.mousePressed(toggleSound);
-  
-  // Initialize the fan noise and filter.
-  fanNoise = new p5.Noise('pink');
-  fanFilter = new p5.BandPass();
-  fanNoise.disconnect();
-  fanNoise.connect(fanFilter);
-  fanNoise.amp(0.1);
   
   // Disable the context menu.
   document.oncontextmenu = function() { return false; };
@@ -267,17 +249,15 @@ function drawCombinedCircle(scaleFactor) {
   strokeWeight(1);
   ellipse(0, 0, 2*scaleFactor, 2*scaleFactor);
   let fieldVectors = [];
-  // Define pairing: pairMapping = [[0,5], [2,1], [4,3]]
-  // Meaning: pair 0: star index 0 with delta index 5 ("Ac")
-  //          pair 1: star index 2 with delta index 1 ("Ba")
-  //          pair 2: star index 4 with delta index 3 ("Cb")
+  // Define fixed pairing: pairMapping = [[0,5], [2,1], [4,3]]
+  // Label pairs as "Ac", "Ba", "Cb" respectively.
   let pairMapping = [[0,5], [2,1], [4,3]];
   let combinedLabels = ["Ac", "Ba", "Cb"];
   for (let k = 0; k < 3; k++) {
-    let theta = k * TWO_PI / 3;  // Use the star's angle for the pair.
+    let theta = k * TWO_PI / 3;
     let ampStar = cutoff[pairMapping[k][0]] ? 0 : sin(t + theta);
     let ampDelta = cutoff[pairMapping[k][1]] ? 0 : sin(t + theta);
-    let combinedAmp = ampStar + ampDelta;  // Ideally 2*sin(t+theta) if not cut.
+    let combinedAmp = ampStar + ampDelta;  // Ideally 2*sin(t+theta)
     let lenCombined = combinedAmp * scaleFactor;
     let vx = lenCombined * cos(theta);
     let vy = lenCombined * sin(theta);
@@ -389,11 +369,6 @@ function draw() {
   // ----- Update Time (if not paused) -----
   if (!paused) {
     t += direction * baseTimeIncrement * speed;
-  }
-  
-  // ----- Update Fan Sound (if enabled) -----
-  if (soundOn) {
-    fanFilter.freq(baseFreq * speed);
   }
 }
 
@@ -510,18 +485,6 @@ function toggleTrail() {
     combinedTrail = [];
   }
   toggleTrailButton.html(trailEnabled ? 'Trail On' : 'Trail Off');
-}
-
-// -------------------- Sound Control Functions --------------------
-function toggleSound() {
-  soundOn = !soundOn;
-  if (soundOn) {
-    fanNoise.start();
-    toggleSoundButton.html('Sound On');
-  } else {
-    fanNoise.stop();
-    toggleSoundButton.html('Sound Off');
-  }
 }
 
 // -------------------- Event Handlers --------------------
